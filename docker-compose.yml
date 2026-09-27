@@ -16,6 +16,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: rohitkumar3848/khojmitra-backend:latest
     container_name: khojmitra-backend
     restart: always
     depends_on:
@@ -23,8 +24,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/khojmitra
-      - JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/khojmitra}
+      - JWT_SECRET=${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     networks:
       - khojmitra-net
 
@@ -32,6 +33,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: rohitkumar3848/khojmitra-frontend:latest
     container_name: khojmitra-frontend
     restart: always
     depends_on:
