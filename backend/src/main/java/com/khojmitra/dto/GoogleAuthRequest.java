@@ -14,4 +14,5 @@ public class GoogleAuthRequest {
     private String name;
     private String avatarUrl;
     private String googleId;
+    private String idToken;
 }
