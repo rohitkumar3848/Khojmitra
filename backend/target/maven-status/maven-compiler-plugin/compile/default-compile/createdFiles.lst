@@ -40,7 +40,6 @@ com\khojmitra\dto\RewardRequest.class
 com\khojmitra\dto\SubmitQuizRequest$SubmitQuizRequestBuilder.class
 com\khojmitra\model\Location$LocationBuilder.class
 com\khojmitra\dto\ItemResponse$QuizQuestionDto.class
-com\khojmitra\dto\ApiResponse$ApiResponseBuilder.class
 com\khojmitra\dto\ItemRequest$ItemRequestBuilder.class
 com\khojmitra\model\Role.class
 com\khojmitra\repository\UserRepository.class
