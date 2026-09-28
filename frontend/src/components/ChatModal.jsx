@@ -164,13 +164,13 @@ export default function ChatModal({ isOpen, onClose, claimId, onOpenReward }) {
           )}
 
           {/* Claimant Tip / Reward Action */}
-          {isClaimant && (claim?.status === 'FINDER_VERIFIED' || claim?.status === 'READY_FOR_PICKUP') && (
+          {isClaimant && (claim?.status === 'FINDER_VERIFIED' || claim?.status === 'READY_FOR_PICKUP' || claim?.status === 'DELIVERED') && (
             <button
               onClick={() => onOpenReward(claim)}
-              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition animate-pulse"
+              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-bold rounded-xl shadow-xs transition animate-pulse"
             >
               <Gift className="w-3.5 h-3.5" />
-              <span>Tip / Reward Finder</span>
+              <span>Gratitude Reward &amp; Collect Item</span>
             </button>
           )}
         </div>

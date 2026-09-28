@@ -6,7 +6,7 @@ spring:
     name: khojmitra-backend
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/khojmitra}
+      uri: ${MONGODB_URI:mongodb+srv://rohit:Khojmitra%402026@cluster0.x0ygyxe.mongodb.net/khojmitra?retryWrites=true&w=majority&appName=Cluster0}
       auto-index-creation: true
   servlet:
     multipart:

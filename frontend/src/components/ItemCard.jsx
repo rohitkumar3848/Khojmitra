@@ -1,9 +1,21 @@
 import React from 'react';
-import { MapPin, Calendar, Building, HelpCircle, CheckCircle, Clock, ShieldCheck, ArrowRight } from 'lucide-react';
+import { 
+  MapPin, 
+  Calendar, 
+  Building, 
+  HelpCircle, 
+  CheckCircle, 
+  Clock, 
+  ShieldCheck, 
+  ArrowRight,
+  Gift,
+  Search
+} from 'lucide-react';
 
-export default function ItemCard({ item, onClaimClick, onViewClick, currentUserId }) {
+export default function ItemCard({ item, onClaimClick, onViewClick, onReportFoundClick, currentUserId }) {
   const isFound = item.type === 'FOUND';
   const isMyPost = item.userId === currentUserId;
+  const isReportedFoundBySomeone = item.type === 'LOST' && (item.foundByUserId || item.status === 'CLAIM_IN_PROGRESS');
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -12,9 +24,9 @@ export default function ItemCard({ item, onClaimClick, onViewClick, currentUserI
       case 'APPROVED':
         return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Available</span>;
       case 'CLAIM_IN_PROGRESS':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Claim in Progress</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Verification Active</span>;
       case 'CONFIRMED_BY_FINDER':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Finder Verified</span>;
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Finder Confirmed</span>;
       case 'READY_FOR_PICKUP':
         return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">Ready at Central Desk</span>;
       case 'RETURNED':
@@ -77,6 +89,22 @@ export default function ItemCard({ item, onClaimClick, onViewClick, currentUserI
             {item.description}
           </p>
 
+          {/* Reward Offered note on Lost items */}
+          {item.rewardNote && (
+            <div className="mt-2.5 p-2 bg-amber-50/90 border border-amber-200 rounded-xl text-xs font-bold text-amber-800 flex items-center gap-1.5">
+              <Gift className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="truncate">{item.rewardNote}</span>
+            </div>
+          )}
+
+          {/* Lost item reported found notice */}
+          {isReportedFoundBySomeone && (
+            <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Reported found! Owner can now answer 5 questions to verify.</span>
+            </div>
+          )}
+
           {/* Location & Office info */}
           <div className="mt-3 space-y-1.5 text-xs text-slate-600">
             <div className="flex items-center gap-1.5">
@@ -99,7 +127,7 @@ export default function ItemCard({ item, onClaimClick, onViewClick, currentUserI
               <Calendar className="w-3.5 h-3.5 shrink-0" />
               <span>{item.date || 'Recent'}</span>
               <span className="mx-1">•</span>
-              <span>By {item.posterName || 'Employee'}</span>
+              <span>By {item.posterName || 'Community Member'}</span>
             </div>
           </div>
 
@@ -115,7 +143,7 @@ export default function ItemCard({ item, onClaimClick, onViewClick, currentUserI
           )}
 
           {/* 5 Questions Protection pill */}
-          {isFound && (
+          {(isFound || isReportedFoundBySomeone) && (
             <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-emerald-700">
               <HelpCircle className="w-3.5 h-3.5 text-emerald-600" />
               <span>Protected by 5-Question Quiz</span>
@@ -124,14 +152,15 @@ export default function ItemCard({ item, onClaimClick, onViewClick, currentUserI
         </div>
 
         {/* Action Button */}
-        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
           <button
             onClick={() => onViewClick(item)}
             className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
           >
-            View Details
+            Details
           </button>
 
+          {/* CASE 1: Found Item -> Others can claim (cannot claim own post) */}
           {isFound && item.status === 'APPROVED' && !isMyPost && (
             <button
               onClick={() => onClaimClick(item)}
@@ -142,7 +171,30 @@ export default function ItemCard({ item, onClaimClick, onViewClick, currentUserI
             </button>
           )}
 
-          {isFound && (item.status === 'CLAIM_IN_PROGRESS' || item.status === 'CONFIRMED_BY_FINDER' || item.status === 'READY_FOR_PICKUP') && (
+          {/* CASE 2: Lost Item -> Others can click "I Found This!" */}
+          {!isFound && !isReportedFoundBySomeone && !isMyPost && onReportFoundClick && (
+            <button
+              onClick={() => onReportFoundClick(item)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition transform active:scale-95"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>I Found This!</span>
+            </button>
+          )}
+
+          {/* CASE 3: Lost Item reported found -> Owner can answer quiz to claim */}
+          {!isFound && isReportedFoundBySomeone && isMyPost && (
+            <button
+              onClick={() => onClaimClick(item)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition animate-pulse"
+            >
+              <span>Verify &amp; Claim</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* CASE 4: Active Chat Session */}
+          {(item.status === 'CLAIM_IN_PROGRESS' || item.status === 'CONFIRMED_BY_FINDER' || item.status === 'READY_FOR_PICKUP') && (
             <button
               onClick={() => onClaimClick(item)}
               className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition"
@@ -152,8 +204,9 @@ export default function ItemCard({ item, onClaimClick, onViewClick, currentUserI
             </button>
           )}
 
-          {isMyPost && (
-            <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">
+          {/* Badge if it's user's own post */}
+          {isMyPost && !isReportedFoundBySomeone && (
+            <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg">
               Your Post
             </span>
           )}

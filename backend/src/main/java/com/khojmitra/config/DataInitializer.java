@@ -1,8 +1,7 @@
 package com.khojmitra.config;
 
 import com.khojmitra.model.*;
-import com.khojmitra.repository.ItemRepository;
-import com.khojmitra.repository.UserRepository;
+import com.khojmitra.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -21,15 +20,22 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
+    private final ClaimRepository claimRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final RewardRepository rewardRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
-        if (userRepository.count() == 0) {
-            log.info("Seeding initial users and demo items into MongoDB...");
+        log.info("Checking KhojMitra MongoDB Atlas collections...");
 
-            // 1. Seed Admin
-            User admin = User.builder()
+        User admin = userRepository.findByEmail("admin@khojmitra.com").orElse(null);
+        User finder = userRepository.findByEmail("rohit@company.com").orElse(null);
+        User claimant = userRepository.findByEmail("priya@company.com").orElse(null);
+
+        // 1. Seed Users if not present
+        if (admin == null) {
+            admin = User.builder()
                     .name("Super Admin")
                     .email("admin@khojmitra.com")
                     .password(passwordEncoder.encode("admin123"))
@@ -40,10 +46,11 @@ public class DataInitializer implements CommandLineRunner {
                     .karmaPoints(100)
                     .walletBalance(500.0)
                     .build();
-            userRepository.save(admin);
+            admin = userRepository.save(admin);
+        }
 
-            // 2. Seed Employee 1 (Finder)
-            User finder = User.builder()
+        if (finder == null) {
+            finder = User.builder()
                     .name("Rohit Sharma")
                     .email("rohit@company.com")
                     .password(passwordEncoder.encode("user123"))
@@ -55,9 +62,10 @@ public class DataInitializer implements CommandLineRunner {
                     .walletBalance(150.0)
                     .build();
             finder = userRepository.save(finder);
+        }
 
-            // 3. Seed Employee 2 (Claimant)
-            User claimant = User.builder()
+        if (claimant == null) {
+            claimant = User.builder()
                     .name("Priya Verma")
                     .email("priya@company.com")
                     .password(passwordEncoder.encode("user123"))
@@ -69,8 +77,12 @@ public class DataInitializer implements CommandLineRunner {
                     .walletBalance(300.0)
                     .build();
             claimant = userRepository.save(claimant);
+        }
 
-            // 4. Seed Found Item with 5 Verification Questions (APPROVED)
+        // 2. Seed Items if empty
+        if (itemRepository.count() == 0) {
+            log.info("Seeding initial lost & found items...");
+
             Item foundEarbuds = Item.builder()
                     .title("Noise Buds VS102 Wireless Earbuds")
                     .description("Found a black charging case with wireless earbuds left on table 7 in the 4th floor cafeteria.")
@@ -101,7 +113,6 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             itemRepository.save(foundEarbuds);
 
-            // 5. Seed Found Item PENDING_APPROVAL (for Admin testing)
             Item pendingFoundWallet = Item.builder()
                     .title("Tommy Hilfiger Brown Leather Wallet")
                     .description("Brown leather wallet found near ATM kiosk in Tower A ground floor corridor.")
@@ -132,7 +143,6 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             itemRepository.save(pendingFoundWallet);
 
-            // 6. Seed Lost Item (Lost Car Key)
             Item lostKey = Item.builder()
                     .title("Hyundai Creta Smart Key with Lanyard")
                     .description("Lost my car key somewhere between Basement 2 parking slot B-42 and Tower B elevator lobby.")
@@ -148,14 +158,128 @@ public class DataInitializer implements CommandLineRunner {
                     .imageUrl("https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=600&auto=format&fit=crop&q=80")
                     .date(LocalDate.now().minusDays(2))
                     .status(ItemStatus.APPROVED)
+                    .rewardNote("₹500 gratitude reward to anyone who returns this key safely!")
                     .userId(claimant.getId())
                     .posterName(claimant.getName())
                     .posterEmail(claimant.getEmail())
                     .createdAt(LocalDateTime.now().minusDays(1))
                     .build();
             itemRepository.save(lostKey);
-
-            log.info("Demo data initialized successfully!");
         }
+
+        // 3. Seed Claims, Messages, and Rewards if empty
+        if (claimRepository.count() == 0 && finder != null && claimant != null) {
+            log.info("Seeding historic claim, chat messages, and rewards into MongoDB...");
+
+            Item returnedWatch = Item.builder()
+                    .title("Apple Watch Series 8 (Midnight)")
+                    .description("Found on gym treadmill in Tower A Basement 1. Handed over to verified owner.")
+                    .category("Electronics")
+                    .type(ItemType.FOUND)
+                    .location(Location.builder()
+                            .city("Gurugram")
+                            .locality("Cyber Hub")
+                            .officeBuilding("Tower A")
+                            .floor("Basement 1")
+                            .roomOrDesk("Fitness Center Treadmill 3")
+                            .build())
+                    .imageUrl("https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=600&auto=format&fit=crop&q=80")
+                    .date(LocalDate.now().minusDays(5))
+                    .status(ItemStatus.RETURNED)
+                    .centralDropLocation("Tower A Reception Locker 5")
+                    .userId(finder.getId())
+                    .posterName(finder.getName())
+                    .posterEmail(finder.getEmail())
+                    .claimedByUserId(claimant.getId())
+                    .createdAt(LocalDateTime.now().minusDays(5))
+                    .build();
+            returnedWatch = itemRepository.save(returnedWatch);
+
+            Claim sampleClaim = Claim.builder()
+                    .itemId(returnedWatch.getId())
+                    .itemTitle(returnedWatch.getTitle())
+                    .itemImageUrl(returnedWatch.getImageUrl())
+                    .claimantId(claimant.getId())
+                    .claimantName(claimant.getName())
+                    .claimantEmail(claimant.getEmail())
+                    .finderId(finder.getId())
+                    .finderName(finder.getName())
+                    .finderEmail(finder.getEmail())
+                    .score(5)
+                    .totalQuestions(5)
+                    .status(ClaimStatus.DELIVERED)
+                    .finderNotes("Verified Apple Watch serial number against Apple Wallet invoice.")
+                    .centralDeskNotes("Owner verified at Tower A Reception Desk. Handover successful.")
+                    .createdAt(LocalDateTime.now().minusDays(4))
+                    .build();
+            sampleClaim = claimRepository.save(sampleClaim);
+
+            returnedWatch.setActiveClaimId(sampleClaim.getId());
+            itemRepository.save(returnedWatch);
+
+            // Seed chat messages
+            ChatMessage msg1 = ChatMessage.builder()
+                    .claimId(sampleClaim.getId())
+                    .senderId("SYSTEM")
+                    .senderName("KhojMitra Bot")
+                    .receiverId(finder.getId())
+                    .content("🎉 Ownership Quiz Passed! Claimant answered 5/5 questions correctly. Chat is now unlocked.")
+                    .isSystemMessage(true)
+                    .timestamp(LocalDateTime.now().minusDays(4))
+                    .build();
+            chatMessageRepository.save(msg1);
+
+            ChatMessage msg2 = ChatMessage.builder()
+                    .claimId(sampleClaim.getId())
+                    .senderId(claimant.getId())
+                    .senderName(claimant.getName())
+                    .receiverId(finder.getId())
+                    .content("Hi Rohit, thank you so much for finding my Apple Watch!")
+                    .isSystemMessage(false)
+                    .timestamp(LocalDateTime.now().minusDays(4).plusMinutes(2))
+                    .build();
+            chatMessageRepository.save(msg2);
+
+            ChatMessage msg3 = ChatMessage.builder()
+                    .claimId(sampleClaim.getId())
+                    .senderId(finder.getId())
+                    .senderName(finder.getName())
+                    .receiverId(claimant.getId())
+                    .content("Most welcome Priya! I have safely placed it at Tower A Reception Desk, Locker 5.")
+                    .isSystemMessage(false)
+                    .timestamp(LocalDateTime.now().minusDays(4).plusMinutes(5))
+                    .build();
+            chatMessageRepository.save(msg3);
+
+            ChatMessage msg4 = ChatMessage.builder()
+                    .claimId(sampleClaim.getId())
+                    .senderId("SYSTEM")
+                    .senderName("KhojMitra Bot")
+                    .receiverId(claimant.getId())
+                    .content("✅ Finder confirmed ownership! Item is ready for pickup at Tower A Reception Desk. Operating hours: 9 AM - 6 PM.")
+                    .isSystemMessage(true)
+                    .timestamp(LocalDateTime.now().minusDays(4).plusMinutes(6))
+                    .build();
+            chatMessageRepository.save(msg4);
+
+            // Seed reward
+            Reward sampleReward = Reward.builder()
+                    .claimId(sampleClaim.getId())
+                    .itemId(returnedWatch.getId())
+                    .claimantId(claimant.getId())
+                    .claimantName(claimant.getName())
+                    .finderId(finder.getId())
+                    .finderName(finder.getName())
+                    .totalTip(200.0)
+                    .finderAmount(100.0)
+                    .platformAmount(100.0)
+                    .isGoodwillBonus(false)
+                    .bonusPoints(0)
+                    .createdAt(LocalDateTime.now().minusDays(4).plusHours(1))
+                    .build();
+            rewardRepository.save(sampleReward);
+        }
+
+        log.info("MongoDB Atlas initialization complete. All collections seeded!");
     }
 }

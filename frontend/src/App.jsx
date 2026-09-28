@@ -10,6 +10,7 @@ import RewardModal from './components/RewardModal';
 import AdminDashboard from './components/AdminDashboard';
 import MyActivity from './components/MyActivity';
 import ItemDetailModal from './components/ItemDetailModal';
+import ReportFoundModal from './components/ReportFoundModal';
 import { itemApi } from './services/api';
 import { 
   Search, 
@@ -58,10 +59,11 @@ function MainContent() {
   const [selectedItemForQuiz, setSelectedItemForQuiz] = useState(null);
   const [activeClaimIdForChat, setActiveClaimIdForChat] = useState(null);
   const [activeClaimForReward, setActiveClaimForReward] = useState(null);
+  const [selectedLostItemForFound, setSelectedLostItemForFound] = useState(null);
 
   useEffect(() => {
     fetchFeed();
-  }, [filterType, filterCategory, filterCity, filterBuilding]);
+  }, [filterType, filterCategory, filterCity, filterBuilding, activeTab]);
 
   const fetchFeed = async () => {
     setLoading(true);
@@ -292,6 +294,13 @@ function MainContent() {
                     item={item}
                     onClaimClick={handleClaimClick}
                     onViewClick={setSelectedItemForDetail}
+                    onReportFoundClick={(it) => {
+                      if (!user) {
+                        setAuthModalOpen(true);
+                      } else {
+                        setSelectedLostItemForFound(it);
+                      }
+                    }}
                     currentUserId={user?.id}
                   />
                 ))}
@@ -357,6 +366,15 @@ function MainContent() {
         onClose={() => setSelectedItemForDetail(null)}
         onClaimClick={handleClaimClick}
         currentUserId={user?.id}
+      />
+
+      <ReportFoundModal
+        isOpen={!!selectedLostItemForFound}
+        item={selectedLostItemForFound}
+        onClose={() => setSelectedLostItemForFound(null)}
+        onSuccess={() => {
+          fetchFeed();
+        }}
       />
 
       {/* Footer */}

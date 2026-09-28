@@ -27,6 +27,7 @@ export const itemApi = {
   getFeed: (params) => api.get('/items/feed', { params }),
   getItem: (id) => api.get(`/items/${id}`),
   createItem: (data) => api.post('/items', data),
+  reportFound: (id, data) => api.post(`/items/${id}/report-found`, data),
   getMyItems: () => api.get('/items/my'),
   deleteItem: (id) => api.delete(`/items/${id}`),
 };

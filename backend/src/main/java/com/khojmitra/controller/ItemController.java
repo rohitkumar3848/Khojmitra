@@ -66,6 +66,16 @@ public class ItemController {
         return ResponseEntity.ok(ApiResponse.ok("Item updated", updated));
     }
 
+    @PostMapping("/{id}/report-found")
+    public ResponseEntity<ApiResponse<Item>> reportFound(
+            @PathVariable String id,
+            @Valid @RequestBody com.khojmitra.dto.ReportFoundRequest request
+    ) {
+        User currentUser = authService.getCurrentUser();
+        Item item = itemService.reportFoundOnLostItem(id, request, currentUser);
+        return ResponseEntity.ok(ApiResponse.ok("Match reported! The owner can now verify their ownership through your questions.", item));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteItem(@PathVariable String id) {
         User currentUser = authService.getCurrentUser();

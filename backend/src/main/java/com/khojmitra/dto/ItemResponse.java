@@ -32,6 +32,10 @@ public class ItemResponse {
     private String posterEmail;
     private String claimedByUserId;
     private String activeClaimId;
+    private String rewardNote;
+    private String foundByUserId;
+    private String foundByName;
+    private String foundByEmail;
     private List<QuizQuestionDto> questions; // Masked questions for claimants
     private LocalDateTime createdAt;
 

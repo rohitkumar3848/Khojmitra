@@ -57,6 +57,7 @@ public class ItemService {
                 .date(request.getDate() != null ? request.getDate() : LocalDate.now())
                 .status(initialStatus)
                 .centralDropLocation(request.getCentralDropLocation())
+                .rewardNote(request.getRewardNote())
                 .userId(user.getId())
                 .posterName(user.getName())
                 .posterEmail(user.getEmail())
@@ -70,13 +71,8 @@ public class ItemService {
     public List<ItemResponse> getPublicFeed(String type, String category, String city, String building) {
         List<Item> items = itemRepository.findAll().stream()
                 .filter(i -> {
-                    // For LOST items: status APPROVED
-                    // For FOUND items: only show if APPROVED or CLAIM_IN_PROGRESS
-                    if (i.getType() == ItemType.LOST) {
-                        return i.getStatus() == ItemStatus.APPROVED;
-                    } else {
-                        return i.getStatus() == ItemStatus.APPROVED || i.getStatus() == ItemStatus.CLAIM_IN_PROGRESS;
-                    }
+                    // Show APPROVED and CLAIM_IN_PROGRESS items on feed
+                    return i.getStatus() == ItemStatus.APPROVED || i.getStatus() == ItemStatus.CLAIM_IN_PROGRESS;
                 })
                 .collect(Collectors.toList());
 
@@ -84,10 +80,42 @@ public class ItemService {
         return items.stream()
                 .filter(i -> type == null || type.isBlank() || i.getType().name().equalsIgnoreCase(type))
                 .filter(i -> category == null || category.isBlank() || i.getCategory().equalsIgnoreCase(category))
-                .filter(i -> city == null || city.isBlank() || (i.getLocation() != null && i.getLocation().getCity() != null && i.getLocation().getCity().equalsIgnoreCase(city)))
-                .filter(i -> building == null || building.isBlank() || (i.getLocation() != null && i.getLocation().getOfficeBuilding() != null && i.getLocation().getOfficeBuilding().equalsIgnoreCase(building)))
+                .filter(i -> city == null || city.isBlank() || (i.getLocation() != null && i.getLocation().getCity() != null && i.getLocation().getCity().toLowerCase().contains(city.toLowerCase().trim())))
+                .filter(i -> building == null || building.isBlank() || (i.getLocation() != null && i.getLocation().getOfficeBuilding() != null && i.getLocation().getOfficeBuilding().toLowerCase().contains(building.toLowerCase().trim())))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    public Item reportFoundOnLostItem(String itemId, com.khojmitra.dto.ReportFoundRequest request, User finder) {
+        Item item = getRawItemById(itemId);
+        if (item.getType() != ItemType.LOST) {
+            throw new IllegalArgumentException("Only LOST items can be reported as found with this action.");
+        }
+        if (item.getUserId().equals(finder.getId())) {
+            throw new IllegalArgumentException("You cannot report finding your own lost item!");
+        }
+
+        List<VerificationQuestion> questions = new ArrayList<>();
+        if (request.getVerificationQuestions() != null) {
+            int qId = 1;
+            for (VerificationQuestion q : request.getVerificationQuestions()) {
+                questions.add(VerificationQuestion.builder()
+                        .id(qId++)
+                        .question(q.getQuestion().trim())
+                        .expectedAnswer(q.getExpectedAnswer() != null ? q.getExpectedAnswer().trim() : "")
+                        .build());
+            }
+        }
+
+        item.setFoundByUserId(finder.getId());
+        item.setFoundByName(finder.getName());
+        item.setFoundByEmail(finder.getEmail());
+        item.setCentralDropLocation(request.getCentralDropLocation());
+        item.setVerificationQuestions(questions);
+        item.setStatus(ItemStatus.CLAIM_IN_PROGRESS);
+        item.setUpdatedAt(LocalDateTime.now());
+
+        return itemRepository.save(item);
     }
 
     public ItemResponse getItemById(String id) {
@@ -162,6 +190,10 @@ public class ItemService {
                 .posterEmail(item.getPosterEmail())
                 .claimedByUserId(item.getClaimedByUserId())
                 .activeClaimId(item.getActiveClaimId())
+                .rewardNote(item.getRewardNote())
+                .foundByUserId(item.getFoundByUserId())
+                .foundByName(item.getFoundByName())
+                .foundByEmail(item.getFoundByEmail())
                 .questions(maskedQuestions)
                 .createdAt(item.getCreatedAt())
                 .build();

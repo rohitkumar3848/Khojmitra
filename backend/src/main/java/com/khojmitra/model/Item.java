@@ -49,6 +49,12 @@ public class Item {
     @Builder.Default
     private List<VerificationQuestion> verificationQuestions = new ArrayList<>(); // 5 security questions (for FOUND items)
 
+    private String rewardNote; // Optional reward note by lost item owner (e.g. "₹500 Reward for returning")
+
+    private String foundByUserId; // Set if someone reported finding this lost item
+    private String foundByName;
+    private String foundByEmail;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 

@@ -30,12 +30,17 @@ public class ClaimService {
         Item item = itemRepository.findById(request.getItemId())
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
 
-        if (item.getType() != ItemType.FOUND) {
-            throw new IllegalArgumentException("Only FOUND items can be claimed via verification quiz.");
+        boolean isLostReportedFound = item.getType() == ItemType.LOST && item.getFoundByUserId() != null;
+        if (item.getType() != ItemType.FOUND && !isLostReportedFound) {
+            throw new IllegalArgumentException("Only FOUND items or Lost items reported found can be claimed via verification quiz.");
         }
 
-        if (item.getUserId().equals(claimant.getId())) {
+        if (item.getType() == ItemType.FOUND && item.getUserId().equals(claimant.getId())) {
             throw new IllegalArgumentException("You cannot claim an item you posted as found!");
+        }
+
+        if (isLostReportedFound && claimant.getId().equals(item.getFoundByUserId())) {
+            throw new IllegalArgumentException("You are the one who reported finding this item; the owner must verify.");
         }
 
         if (item.getStatus() == ItemStatus.RETURNED) {
@@ -77,6 +82,10 @@ public class ClaimService {
         if (passed) {
             // Find existing claim or create new
             Optional<Claim> existingClaimOpt = claimRepository.findByItemIdAndClaimantId(item.getId(), claimant.getId());
+            String targetFinderId = item.getType() == ItemType.FOUND ? item.getUserId() : item.getFoundByUserId();
+            String targetFinderName = item.getType() == ItemType.FOUND ? item.getPosterName() : item.getFoundByName();
+            String targetFinderEmail = item.getType() == ItemType.FOUND ? item.getPosterEmail() : item.getFoundByEmail();
+
             Claim claim = existingClaimOpt.orElseGet(() -> Claim.builder()
                     .itemId(item.getId())
                     .itemTitle(item.getTitle())
@@ -84,9 +93,9 @@ public class ClaimService {
                     .claimantId(claimant.getId())
                     .claimantName(claimant.getName())
                     .claimantEmail(claimant.getEmail())
-                    .finderId(item.getUserId())
-                    .finderName(item.getPosterName())
-                    .finderEmail(item.getPosterEmail())
+                    .finderId(targetFinderId)
+                    .finderName(targetFinderName)
+                    .finderEmail(targetFinderEmail)
                     .createdAt(LocalDateTime.now())
                     .build());
 

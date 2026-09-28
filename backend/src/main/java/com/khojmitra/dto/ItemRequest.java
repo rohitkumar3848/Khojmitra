@@ -39,6 +39,8 @@ public class ItemRequest {
 
     private String centralDropLocation;
 
+    private String rewardNote; // Optional reward offered by owner of lost item
+
     // For FOUND items, exactly 5 verification questions
     private List<VerificationQuestion> verificationQuestions;
 }

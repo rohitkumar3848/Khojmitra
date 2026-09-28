@@ -28,6 +28,8 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
   const [floor, setFloor] = useState('4th Floor');
   const [roomOrDesk, setRoomOrDesk] = useState('');
 
+  const [rewardNote, setRewardNote] = useState('');
+
   // Drop-off
   const [centralDropLocation, setCentralDropLocation] = useState('Tower B Ground Floor Reception Desk (Locker #14)');
 
@@ -80,6 +82,7 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
         imageUrl,
         date,
         centralDropLocation: type === 'FOUND' ? centralDropLocation : null,
+        rewardNote: type === 'LOST' ? rewardNote : null,
         verificationQuestions: type === 'FOUND' ? questions : null
       };
 
@@ -262,6 +265,26 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
               />
             </div>
           </div>
+
+          {/* Reward Offered note for Lost Items */}
+          {type === 'LOST' && (
+            <div className="pt-2 border-t border-slate-100">
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                <span className="text-amber-500">🎁</span>
+                <span>Gratitude Reward Offered / Important Note (Optional)</span>
+              </label>
+              <input
+                type="text"
+                value={rewardNote}
+                onChange={(e) => setRewardNote(e.target.value)}
+                placeholder="e.g. ₹500 reward for finder, or Contains vital university/work documents"
+                className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                Offering a reward or noting urgency incentivizes the community to help return your item!
+              </p>
+            </div>
+          )}
 
           {/* 5 Ownership Questions Builder for Found Items */}
           {type === 'FOUND' && (
