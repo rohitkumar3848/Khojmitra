@@ -84,49 +84,17 @@ public class AuthService {
     }
 
     public AuthResponse googleAuth(GoogleAuthRequest request) {
-        String email = request.getEmail();
-        String name = request.getName();
-        String avatarUrl = request.getAvatarUrl();
-
-        if (request.getIdToken() != null && !request.getIdToken().isBlank()) {
-            try {
-                String[] parts = request.getIdToken().split("\\.");
-                if (parts.length >= 2) {
-                    String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]), java.nio.charset.StandardCharsets.UTF_8);
-                    com.fasterxml.jackson.databind.JsonNode jsonNode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(payloadJson);
-                    if (jsonNode.has("email")) {
-                        email = jsonNode.get("email").asText();
-                    }
-                    if (jsonNode.has("name")) {
-                        name = jsonNode.get("name").asText();
-                    }
-                    if (jsonNode.has("picture")) {
-                        avatarUrl = jsonNode.get("picture").asText();
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("Google authentication failed: Email address is required.");
-        }
-
-        email = email.toLowerCase().trim();
-        final String finalEmail = email;
-        final String finalName = (name != null && !name.isBlank()) ? name : finalEmail.split("@")[0];
-        final String finalAvatar = avatarUrl;
-
-        User user = userRepository.findByEmail(finalEmail).orElseGet(() -> {
+        String email = request.getEmail().toLowerCase().trim();
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
             Set<Role> roles = new HashSet<>();
             roles.add(Role.ROLE_USER);
 
             User newUser = User.builder()
-                    .name(finalName)
-                    .email(finalEmail)
+                    .name(request.getName() != null ? request.getName() : email.split("@")[0])
+                    .email(email)
                     .password(passwordEncoder.encode("GOOGLE_OAUTH_" + System.currentTimeMillis()))
                     .roles(roles)
-                    .avatarUrl(finalAvatar)
+                    .avatarUrl(request.getAvatarUrl())
                     .karmaPoints(15)
                     .walletBalance(0.0)
                     .createdAt(LocalDateTime.now())
